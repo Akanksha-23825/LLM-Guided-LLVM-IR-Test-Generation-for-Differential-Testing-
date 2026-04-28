@@ -1,0 +1,91 @@
+Differential Testing Report
+==========================================================
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_0.ll
+  Function: @add(2 args)
+  -O0: output = '7\n30\n0\n0'
+  -O2: output = '7\n30\n0\n0'
+  -O3: output = '7\n30\n0\n0'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_2.ll
+  Function: @even(1 args)
+  -O0: output = '1\n0\n1\n0'
+  -O2: output = '1\n0\n1\n0'
+  -O3: output = '1\n0\n1\n0'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_3.ll
+  Function: @factorial(1 args)
+  -O0: output = 'TIMEOUT'
+  -O2: output = 'TIMEOUT'
+  -O3: output = 'TIMEOUT'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_5.ll
+  Function: @multiply(2 args)
+  -O0: output = '12\n42\n0\n-6'
+  -O2: output = '12\n42\n0\n-6'
+  -O3: output = '12\n42\n0\n-6'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_6.ll
+  Function: @subtract(2 args)
+  -O0: output = '7\n0\n-1\n0'
+  -O2: output = '7\n0\n-1\n0'
+  -O3: output = '7\n0\n-1\n0'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_8.ll
+  Function: @sum_loop(1 args)
+  -O0: output = 'TIMEOUT'
+  -O2: output = 'TIMEOUT'
+  -O3: output = 'TIMEOUT'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_9.ll
+  Function: @min(2 args)
+  -O0: output = '3\n2\n4\n-1'
+  -O2: output = '3\n2\n4\n-1'
+  -O3: output = '3\n2\n4\n-1'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_0_mut.ll
+  Function: @add(2 args)
+  [Note: SSA numbering gap repaired before compile]
+  -O0: output = '9\n32\n2\n2'
+  -O2: output = '9\n32\n2\n2'
+  -O3: output = '9\n32\n2\n2'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_2_mut.ll
+  Function: @even(1 args)
+  -O0: output = '1\n0\n1\n0'
+  -O2: output = '1\n0\n1\n0'
+  -O3: output = '1\n0\n1\n0'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_3_mut.ll
+  Function: @factorial(1 args)
+  [Note: SSA numbering gap repaired before compile]
+  -O0: output = 'TIMEOUT'
+  -O2: output = 'TIMEOUT'
+  -O3: output = 'TIMEOUT'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_5_mut.ll
+  Function: @multiply(2 args)
+  -O0: output = '12\n42\n0\n-6'
+  -O2: output = '12\n42\n0\n-6'
+  -O3: output = '12\n42\n0\n-6'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_6_mut.ll
+  Function: @subtract(2 args)
+  -O0: output = '7\n0\n-1\n0'
+  -O2: output = '7\n0\n-1\n0'
+  -O3: output = '7\n0\n-1\n0'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_8_mut.ll
+  Function: @sum_loop(1 args)
+  -O0: output = 'TIMEOUT'
+  -O2: output = 'TIMEOUT'
+  -O3: output = 'TIMEOUT'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_9_mut.ll
+  Function: @min(2 args)
+  -O0: output = '3\n2\n4\n-1'
+  -O2: output = '3\n2\n4\n-1'
+  -O3: output = '3\n2\n4\n-1'
+
+==========================================================
+PASS=14  DIFF=0  ERROR=0
