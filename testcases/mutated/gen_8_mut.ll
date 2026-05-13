@@ -1,20 +1,28 @@
-; Mutation: changed add to mul in %new_acc calculation
-define i32 @sum_loop(i32 %n) {
+; Mutation: replaced the constant value 11 with 20 in the icmp slt instruction
+define i32 @sum_to_10() {
 entry:
-  %acc = add i32 0, 0
-  %i = add i32 1, 0
+  %sum = alloca i32, align 4
+  %i = alloca i32, align 4
+  store i32 0, i32* %sum, align 4
+  store i32 1, i32* %i, align 4
   br label %loop
 
 loop:
-  %cond = icmp slt i32 %i, %n
-  br i1 %cond, label %loop_body, label %loop_after
+  %i_val = load i32, i32* %i, align 4
+  %cond = icmp slt i32 %i_val, 20
+  br i1 %cond, label %body, label %exit
 
-loop_body:
-  %new_acc = mul i32 %acc, %i
-  %new_i = add i32 %i, 1
+body:
+  %i_val1 = load i32, i32* %i, align 4
+  %sum_val = load i32, i32* %sum, align 4
+  %new_sum = add i32 %sum_val, %i_val1
+  store i32 %new_sum, i32* %sum, align 4
+  %i_val2 = load i32, i32* %i, align 4
+  %new_i = add i32 %i_val2, 1
+  store i32 %new_i, i32* %i, align 4
   br label %loop
 
-loop_after:
-  %final_acc = add i32 %acc, %i
-  ret i32 %final_acc
+exit:
+  %sum_val1 = load i32, i32* %sum, align 4
+  ret i32 %sum_val1
 }

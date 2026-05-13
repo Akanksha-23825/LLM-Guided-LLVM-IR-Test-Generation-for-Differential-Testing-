@@ -1,24 +1,19 @@
 define i32 @factorial(i32 %n) {
 entry:
-  %1 = alloca i32
-  store i32 1, i32* %1
+  %result.addr = alloca i32, align 4
+  store i32 1, i32* %result.addr, align 4
   br label %loop
 
 loop:
-  %2 = load i32, i32* %1
-  %3 = icmp sgt i32 %n, 1
-  br i1 %3, label %loop_body, label %exit
-
-loop_body:
-  %4 = load i32, i32* %1
-  %5 = mul nsw i32 %4, %n
-  store i32 %5, i32* %1
-  %6 = load i32, i32* %1
-  %7 = sub i32 %n, 1
-  store i32 %7, i32* %1
-  br label %loop
+  %i = phi i32 [ %n, %entry ], [ %i.next, %loop ]
+  %result = load i32, i32* %result.addr, align 4
+  %mul = mul nsw i32 %result, %i
+  store i32 %mul, i32* %result.addr, align 4
+  %i.next = add nsw i32 %i, -1
+  %cond = icmp sgt i32 %i.next, 0
+  br i1 %cond, label %loop, label %exit
 
 exit:
-  %8 = load i32, i32* %1
-  ret i32 %8
+  %result = load i32, i32* %result.addr, align 4
+  ret i32 %result
 }
