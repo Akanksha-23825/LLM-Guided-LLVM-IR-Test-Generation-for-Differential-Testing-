@@ -9,33 +9,24 @@ Differential Testing Report
 
 [ERROR] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_2.ll
   Function: @is_even(1 args)
-  -O0: COMPILE FAILED — /tmp/tmpyhc0ei0i/repaired.ll:4:12: error: expected type
-    4 |   ret i32 (or i32 %rem, 0)
-      |            ^
-1 error 
-  -O2: COMPILE FAILED — /tmp/tmpyhc0ei0i/repaired.ll:4:12: error: expected type
-    4 |   ret i32 (or i32 %rem, 0)
-      |            ^
-1 error 
-  -O3: COMPILE FAILED — /tmp/tmpyhc0ei0i/repaired.ll:4:12: error: expected type
-    4 |   ret i32 (or i32 %rem, 0)
-      |            ^
-1 error 
+  -O0: COMPILE FAILED — /tmp/tmppla9_g9g/repaired.ll:4:16: error: '%1' defined with type 'i32' but expected 'i1'
+    4 |   %2 = zext i1 %1 to i3
+  -O2: COMPILE FAILED — /tmp/tmppla9_g9g/repaired.ll:4:16: error: '%1' defined with type 'i32' but expected 'i1'
+    4 |   %2 = zext i1 %1 to i3
+  -O3: COMPILE FAILED — /tmp/tmppla9_g9g/repaired.ll:4:16: error: '%1' defined with type 'i32' but expected 'i1'
+    4 |   %2 = zext i1 %1 to i3
 
-[ERROR] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_3.ll
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_3.ll
   Function: @factorial(1 args)
-  -O0: COMPILE FAILED — /tmp/tmp_dl3sa0g/repaired.ll:17:3: error: multiple definition of local value named 'result'
-   17 |   %result = load i32
-  -O2: COMPILE FAILED — /tmp/tmp_dl3sa0g/repaired.ll:17:3: error: multiple definition of local value named 'result'
-   17 |   %result = load i32
-  -O3: COMPILE FAILED — /tmp/tmp_dl3sa0g/repaired.ll:17:3: error: multiple definition of local value named 'result'
-   17 |   %result = load i32
+  -O0: output = '4\n0\n5\n2'
+  -O2: output = '4\n0\n5\n2'
+  -O3: output = '4\n0\n5\n2'
 
 [PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_5.ll
-  Function: @multiply(2 args)
-  -O0: output = '12\n42\n0\n-6'
-  -O2: output = '12\n42\n0\n-6'
-  -O3: output = '12\n42\n0\n-6'
+  Function: @entry(2 args)
+  -O0: output = '0'
+  -O2: output = '0'
+  -O3: output = '0'
 
 [PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_6.ll
   Function: @subtract(2 args)
@@ -43,23 +34,35 @@ Differential Testing Report
   -O2: output = '7\n0\n-1\n0'
   -O3: output = '7\n0\n-1\n0'
 
-[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_8.ll
-  Function: @sum_to_10(0 args)
+[DIFF] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_8.ll
+  Function: @sum_from_1_to_10(0 args)
   -O0: output = '55'
-  -O2: output = '55'
-  -O3: output = '55'
+  -O2: output = '0'
+  -O3: output = '0'
+  >> DIVERGENCE: 
+    -O0 output: '55'
+    -O2 output:  '0'
+  >> DIVERGENCE: 
+    -O0 output: '55'
+    -O3 output:  '0'
 
-[PASS] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_9.ll
+[ERROR] /mnt/f/Engineering/Compiler Design/testcases/generated/gen_9.ll
   Function: @min(2 args)
-  -O0: output = '3\n2\n4\n-1'
-  -O2: output = '3\n2\n4\n-1'
-  -O3: output = '3\n2\n4\n-1'
+  -O0: COMPILE FAILED — /tmp/tmpgu0yd8at/repaired.ll:3:20: error: use of undefined value '%cmp'
+    3 |   %min = select i1 %cmp, i32 %x, i32 %y
+
+  -O2: COMPILE FAILED — /tmp/tmpgu0yd8at/repaired.ll:3:20: error: use of undefined value '%cmp'
+    3 |   %min = select i1 %cmp, i32 %x, i32 %y
+
+  -O3: COMPILE FAILED — /tmp/tmpgu0yd8at/repaired.ll:3:20: error: use of undefined value '%cmp'
+    3 |   %min = select i1 %cmp, i32 %x, i32 %y
+
 
 [PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_0_mut.ll
-  Function: @add(1 args)
-  -O0: output = '5'
-  -O2: output = '5'
-  -O3: output = '5'
+  Function: @add(2 args)
+  -O0: output = '7\n30\n0\n0'
+  -O2: output = '7\n30\n0\n0'
+  -O3: output = '7\n30\n0\n0'
 
 [PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_1_mut.ll
   Function: @max(2 args)
@@ -68,23 +71,28 @@ Differential Testing Report
   -O3: output = '0'
 
 [PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_2_mut.ll
-  Function: @even(1 args)
-  -O0: output = '1\n0\n1\n0'
-  -O2: output = '1\n0\n1\n0'
-  -O3: output = '1\n0\n1\n0'
+  Function: @check_even(1 args)
+  -O0: output = '1'
+  -O2: output = '1'
+  -O3: output = '1'
 
 [PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_3_mut.ll
   Function: @factorial(1 args)
-  [Note: SSA numbering gap repaired before compile]
-  -O0: output = 'TIMEOUT'
-  -O2: output = 'TIMEOUT'
-  -O3: output = 'TIMEOUT'
+  -O0: output = '4\n0\n5\n2'
+  -O2: output = '4\n0\n5\n2'
+  -O3: output = '4\n0\n5\n2'
+
+[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_4_mut.ll
+  Function: @abs(1 args)
+  -O0: output = '0'
+  -O2: output = '0'
+  -O3: output = '0'
 
 [PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_5_mut.ll
-  Function: @multiply(2 args)
-  -O0: output = '32\n77\n25\n9'
-  -O2: output = '32\n77\n25\n9'
-  -O3: output = '32\n77\n25\n9'
+  Function: @entry(2 args)
+  -O0: output = '0'
+  -O2: output = '0'
+  -O3: output = '0'
 
 [PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_6_mut.ll
   Function: @subtract(2 args)
@@ -92,17 +100,29 @@ Differential Testing Report
   -O2: output = '7\n0\n-1\n0'
   -O3: output = '7\n0\n-1\n0'
 
-[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_7_mut.ll
-  Function: @entry(1 args)
-  -O0: output = '0'
+[DIFF] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_7_mut.ll
+  Function: @greater_than_100(1 args)
+  -O0: output = '-1224933120'
+  -O2: output = '120512768'
+  -O3: output = '-211758848'
+  >> DIVERGENCE: 
+    -O0 output: '-1224933120'
+    -O2 output:  '120512768'
+  >> DIVERGENCE: 
+    -O0 output: '-1224933120'
+    -O3 output:  '-211758848'
+
+[DIFF] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_8_mut.ll
+  Function: @sum_from_1_to_10(0 args)
+  -O0: output = '55'
   -O2: output = '0'
   -O3: output = '0'
-
-[PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_8_mut.ll
-  Function: @sum_to_10(0 args)
-  -O0: output = '190'
-  -O2: output = '190'
-  -O3: output = '190'
+  >> DIVERGENCE: 
+    -O0 output: '55'
+    -O2 output:  '0'
+  >> DIVERGENCE: 
+    -O0 output: '55'
+    -O3 output:  '0'
 
 [PASS] /mnt/f/Engineering/Compiler Design/testcases/mutated/gen_9_mut.ll
   Function: @min(2 args)
@@ -111,4 +131,4 @@ Differential Testing Report
   -O3: output = '3\n2\n4\n-1'
 
 ==========================================================
-PASS=14  DIFF=0  ERROR=2
+PASS=12  DIFF=3  ERROR=2

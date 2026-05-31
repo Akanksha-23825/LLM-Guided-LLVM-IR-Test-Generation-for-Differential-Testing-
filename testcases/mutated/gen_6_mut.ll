@@ -1,7 +1,6 @@
-; Mutation: added dead computation with unused result
+; Mutation: renamed %tmp1 to %result
 define i32 @subtract(i32 %a, i32 %b) {
 entry:
-  %1 = sub i32 %a, %b
-  %2 = mul i32 %a, %b
-  ret i32 %1
+  %result = sub i32 %a, %b
+  ret i32 %result
 }

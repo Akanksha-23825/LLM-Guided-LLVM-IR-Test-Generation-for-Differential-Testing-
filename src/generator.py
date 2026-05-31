@@ -25,6 +25,17 @@ SEEDS = [
     "returns 1 if input is greater than 100 else returns 0",
     "computes sum of 1 to 10 using a loop",
     "returns the minimum of two i32 values using icmp and select",
+
+    "computes maximum of three values using nested branches",
+    "counts from 0 to 20 using a PHI node loop",
+    "returns bitwise and of two i32 values",
+    "returns bitwise xor of two i32 values",
+    "left shifts an i32 value by two positions",
+    "finds greatest common divisor using Euclidean loop",
+    "computes power of a number using repeated multiplication",
+    "returns first matching range from comparison chain",
+    "loops until value reaches zero with early exit",
+    "implements FizzBuzz logic for numbers one to fifteen",
 ]
 
 

@@ -1,5 +1,7 @@
-define i32 @is_even(i32 %x) {
+define i32 @is_even(i32 %0) {
 entry:
-  %rem = urem i32 %x, 2
-  ret i32 (or i32 %rem, i32 0)
+  %1 = urem i32 %0, 2
+  %2 = trunc i32 %1 to i1
+  %3 = zext i1 %2 to i32
+  ret i32 %3
 }

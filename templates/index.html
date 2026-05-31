@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🔬 LLVM IR Test Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0e17;
+  --bg2:       #0f1520;
+  --bg3:       #141c2e;
+  --bg4:       #1a2438;
+  --border:    #1e2d45;
+  --border2:   #253550;
+  --green:     #00ff9d;
+  --green-dim: #00c97a;
+  --cyan:      #00d4ff;
+  --cyan-dim:  #009ec0;
+  --yellow:    #ffd966;
+  --red:       #ff4d6d;
+  --purple:    #a78bfa;
+  --text:      #c8d8f0;
+  --text-dim:  #6a7f9a;
+  --text-muted:#3d5068;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-ui:   'Syne', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  overflow: hidden;
+}
+
+/* ── Scanline overlay ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.04) 2px, rgba(0,0,0,.04) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Layout ── */
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── Header ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+}
+header::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), var(--green), transparent);
+}
+.logo {
+  font-size: 15px; font-weight: 800; letter-spacing: .04em;
+  color: var(--green);
+  display: flex; align-items: center; gap: 10px;
+}
+.logo span { color: var(--cyan); }
+.logo .version {
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 400;
+  color: var(--text-muted);
+  border: 1px solid var(--border2);
+  padding: 2px 6px; border-radius: 3px;
+}
+.header-right { display: flex; align-items: center; gap: 16px; }
+.hpe-badge {
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 600;
+  color: var(--text-dim);
+  border: 1px solid var(--border2);
+  padding: 3px 8px; border-radius: 3px;
+  letter-spacing: .1em;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,157,.4)} 50%{opacity:.7;box-shadow:0 0 0 6px rgba(0,255,157,0)} }
+
+/* ── Tabs ── */
+nav {
+  display: flex; align-items: stretch;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  flex-shrink: 0;
+  gap: 4px;
+}
+.tab {
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 14px 18px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .2s, border-color .2s;
+  white-space: nowrap;
+  user-select: none;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+/* ── Content area ── */
+#content { flex: 1; overflow: hidden; position: relative; }
+.panel {
+  position: absolute; inset: 0;
+  overflow-y: auto;
+  padding: 24px;
+  opacity: 0; pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+.panel.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── Section titles ── */
+.section-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: var(--border);
+}
+
+/* ── Controls ── */
+.control-row { display: flex; gap: 10px; align-items: stretch; margin-bottom: 16px; flex-wrap: wrap; }
+input[type=text], select, textarea {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color .2s;
+}
+input[type=text]:focus, select:focus, textarea:focus { border-color: var(--cyan-dim); }
+input[type=text] { flex: 1; min-width: 200px; }
+select { cursor: pointer; appearance: none; padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236a7f9a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+select option { background: var(--bg3); }
+
+button {
+  font-family: var(--font-ui); font-size: 12px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: 10px 20px; border-radius: 4px; border: none;
+  cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--green); color: #000;
+}
+.btn-primary:hover { background: #00ffb0; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,255,157,.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-secondary {
+  background: transparent; color: var(--cyan);
+  border: 1px solid var(--cyan-dim);
+}
+.btn-secondary:hover { background: rgba(0,212,255,.08); }
+.btn-danger {
+  background: transparent; color: var(--red);
+  border: 1px solid rgba(255,77,109,.4);
+}
+.btn-danger:hover { background: rgba(255,77,109,.08); }
+.btn-large {
+  font-size: 16px; padding: 18px 48px;
+  box-shadow: 0 0 40px rgba(0,255,157,.2);
+}
+
+/* ── Split panels ── */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.split-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .split, .split-3 { grid-template-columns: 1fr; } }
+
+/* ── Code block ── */
+.code-block {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+}
+.code-label {
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.copy-btn {
+  font-family: var(--font-mono); font-size: 10px;
+  font-weight: 400; letter-spacing: .05em;
+  padding: 3px 10px; border-radius: 3px;
+  background: transparent; color: var(--text-dim);
+  border: 1px solid var(--border);
+  text-transform: none;
+}
+.copy-btn:hover { color: var(--green); border-color: var(--green); }
+pre {
+  font-family: var(--font-mono);
+  font-size: 12px; line-height: 1.7;
+  padding: 16px;
+  overflow-x: auto;
+  min-height: 80px;
+  white-space: pre;
+}
+.placeholder { color: var(--text-muted); font-style: italic; }
+
+/* IR Syntax highlight */
+.kw  { color: var(--green); font-weight: 600; }   /* define ret br switch unreachable */
+.ty  { color: var(--yellow); }                      /* i32 i64 i1 void ptr */
+.var { color: var(--cyan); }                        /* %name */
+.str { color: var(--purple); }                      /* strings */
+.num { color: #ff9f7f; }                            /* numbers */
+.cmt { color: var(--text-muted); font-style: italic; } /* ; comments */
+
+/* ── Result panel ── */
+.result-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px;
+  min-height: 80px;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+  padding: 8px 18px; border-radius: 4px;
+  letter-spacing: .06em;
+  margin-bottom: 14px;
+}
+.badge-valid   { background: rgba(0,255,157,.1); color: var(--green); border: 1px solid rgba(0,255,157,.3); }
+.badge-invalid { background: rgba(255,77,109,.1); color: var(--red);   border: 1px solid rgba(255,77,109,.3); }
+.badge-fixed   { background: rgba(0,255,157,.1); color: var(--green); border: 1px solid rgba(0,255,157,.3); }
+.badge-failed  { background: rgba(255,77,109,.1); color: var(--red);   border: 1px solid rgba(255,77,109,.3); }
+.error-list { list-style: none; }
+.error-list li {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--red); padding: 4px 0;
+  border-bottom: 1px solid rgba(255,77,109,.1);
+}
+.error-list li::before { content: '→ '; opacity: .6; }
+
+/* ── Diff highlight ── */
+.diff-add  { background: rgba(0,255,157,.1); }
+.diff-del  { background: rgba(255,77,109,.1); }
+.diff-chg  { background: rgba(255,217,102,.12); }
+
+/* ── Metric cards ── */
+.metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px; }
+.metric-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 24px 20px; text-align: center;
+  position: relative; overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
+}
+.metric-card:hover { transform: translateY(-2px); }
+.metric-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.metric-card.m-pass::before  { background: var(--green); box-shadow: 0 0 20px var(--green); }
+.metric-card.m-diff::before  { background: var(--red); }
+.metric-card.m-error::before { background: var(--yellow); }
+.metric-card .val {
+  font-family: var(--font-mono);
+  font-size: 48px; font-weight: 700; line-height: 1;
+  margin-bottom: 8px;
+}
+.metric-card.m-pass  .val { color: var(--green); }
+.metric-card.m-diff  .val { color: var(--red); }
+.metric-card.m-error .val { color: var(--yellow); }
+.metric-card .lbl {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Terminal ── */
+.terminal {
+  background: #050a10;
+  border: 1px solid var(--border);
+  border-radius: 6px; overflow: hidden;
+}
+.terminal-header {
+  padding: 8px 14px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 6px;
+}
+.term-dot { width: 10px; height: 10px; border-radius: 50%; }
+.terminal-body {
+  font-family: var(--font-mono);
+  font-size: 11.5px; line-height: 1.8;
+  color: #4ade80;
+  padding: 16px;
+  min-height: 160px;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.terminal-body .t-dim   { color: var(--text-muted); }
+.terminal-body .t-cyan  { color: var(--cyan); }
+.terminal-body .t-yellow{ color: var(--yellow); }
+.terminal-body .t-red   { color: var(--red); }
+.terminal-body .t-white { color: var(--text); }
+
+/* ── Pipeline summary ── */
+.summary-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-top: 20px; }
+.summary-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 16px; text-align: center;
+}
+.summary-card .s-val {
+  font-family: var(--font-mono); font-size: 28px; font-weight: 700;
+  color: var(--cyan); line-height: 1;
+  margin-bottom: 6px;
+}
+.summary-card .s-lbl {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Spinner ── */
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle; margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading { display: flex; align-items: center; gap: 8px; color: var(--text-dim); font-family: var(--font-mono); font-size: 12px; padding: 12px 0; }
+
+/* ── Pipeline center layout ── */
+.pipeline-center { display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 24px; }
+.pipeline-steps {
+  display: flex; gap: 0; align-items: center;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.ps { padding: 6px 14px; border: 1px solid var(--border); background: var(--bg3); }
+.ps:first-child { border-radius: 4px 0 0 4px; }
+.ps:last-child  { border-radius: 0 4px 4px 0; }
+.ps-arrow { color: var(--border2); padding: 0 4px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--bg3); }
+
+/* ── Status bar ── */
+#statusbar {
+  height: 26px; display: flex; align-items: center;
+  padding: 0 16px; gap: 16px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sb-item {
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
+}
+.sb-item.green { color: var(--green); }
+.sb-sep { width: 1px; height: 14px; background: var(--border); }
+
+/* ── Mutate/Repair grid ── */
+.mr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media(max-width:900px){ .mr-grid { grid-template-columns:1fr; } }
+.mr-section {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px;
+}
+.mr-title {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--cyan); margin-bottom: 14px;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">🔬 LLVM IR <span>Test Lab</span> <span class="version">v1.0</span></div>
+    <div class="header-right">
+      <span class="hpe-badge">HPE EVAL</span>
+      <div class="dot"></div>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <nav>
+    <div class="tab active" onclick="switchTab(0)">01 Generate</div>
+    <div class="tab" onclick="switchTab(1)">02 Validate</div>
+    <div class="tab" onclick="switchTab(2)">03 Mutate &amp; Repair</div>
+    <div class="tab" onclick="switchTab(3)">04 Pipeline</div>
+    <div class="tab" onclick="switchTab(4)">05 Diff Results</div>
+  </nav>
+
+  <!-- Content -->
+  <div id="content">
+
+    <!-- TAB 1: Generate -->
+    <div class="panel active" id="tab-0">
+      <div class="section-title">Generate LLVM IR from Seed</div>
+      <div class="control-row">
+        <input type="text" id="seed-input" placeholder="e.g. adds two integers and returns the sum"/>
+        <select id="seed-select" onchange="document.getElementById('seed-input').value=this.value">
+          <option value="">— Quick Seeds —</option>
+          {% for s in seeds %}
+          <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn-primary" onclick="doGenerate()">▶ Generate IR</button>
+      </div>
+      <div id="gen-loading" style="display:none" class="loading"><span class="spinner"></span>Calling LLM API...</div>
+      <div class="split" id="gen-result" style="display:none">
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-label">Generated IR</span>
+            <button class="copy-btn" onclick="copyCode('gen-ir-pre')">Copy</button>
+          </div>
+          <pre id="gen-ir-pre"><span class="placeholder">IR will appear here...</span></pre>
+        </div>
+        <div class="result-panel">
+          <div class="section-title">Validation Result</div>
+          <div id="gen-badge"></div>
+          <ul class="error-list" id="gen-errors"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Validate -->
+    <div class="panel" id="tab-1">
+      <div class="section-title">Validate LLVM IR File</div>
+      <div class="control-row">
+        <select id="val-file-select">
+          <option value="">— Select .ll file —</option>
+        </select>
+        <button class="btn-primary" onclick="doValidate()">✓ Validate</button>
+      </div>
+      <div id="val-loading" style="display:none" class="loading"><span class="spinner"></span>Running opt -passes=verify...</div>
+      <div class="split" id="val-result" style="display:none">
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-label">IR Source</span>
+            <button class="copy-btn" onclick="copyCode('val-ir-pre')">Copy</button>
+          </div>
+          <pre id="val-ir-pre"><span class="placeholder">Select a file to inspect...</span></pre>
+        </div>
+        <div class="result-panel">
+          <div class="section-title">Validation Result</div>
+          <div id="val-badge"></div>
+          <ul class="error-list" id="val-errors"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Mutate & Repair -->
+    <div class="panel" id="tab-2">
+      <div class="section-title">Mutate &amp; Repair IR</div>
+      <div class="mr-grid">
+
+        <!-- Mutate -->
+        <div class="mr-section">
+          <div class="mr-title">⚡ Mutate</div>
+          <div class="control-row">
+            <select id="mut-file-select" style="flex:1">
+              <option value="">— Select .ll file —</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <select id="mut-type-select" style="flex:1">
+              <option value="replace a numeric constant with a different constant value">Replace constant</option>
+              <option value="swap one arithmetic operator: change add to mul or sub to add">Swap operator</option>
+              <option value="add one dead computation whose result is never used">Add dead code</option>
+              <option value="rename one SSA variable consistently everywhere it appears">Rename variable</option>
+            </select>
+            <button class="btn-primary" onclick="doMutate()">Mutate</button>
+          </div>
+          <div id="mut-loading" style="display:none" class="loading"><span class="spinner"></span>Mutating IR...</div>
+          <div id="mut-result" style="display:none">
+            <div class="split">
+              <div class="code-block">
+                <div class="code-header"><span class="code-label">Original</span><button class="copy-btn" onclick="copyCode('mut-orig-pre')">Copy</button></div>
+                <pre id="mut-orig-pre"></pre>
+              </div>
+              <div class="code-block">
+                <div class="code-header"><span class="code-label">Mutated</span><button class="copy-btn" onclick="copyCode('mut-new-pre')">Copy</button></div>
+                <pre id="mut-new-pre"></pre>
+              </div>
+            </div>
+            <div style="margin-top:10px" id="mut-badge"></div>
+          </div>
+        </div>
+
+        <!-- Repair -->
+        <div class="mr-section">
+          <div class="mr-title">🔧 Repair</div>
+          <div class="control-row">
+            <select id="rep-file-select" style="flex:1">
+              <option value="">— Select .ll file —</option>
+            </select>
+            <button class="btn-secondary" onclick="doRepair()">Repair</button>
+          </div>
+          <div id="rep-loading" style="display:none" class="loading"><span class="spinner"></span>LLM repairing IR...</div>
+          <div id="rep-result" style="display:none">
+            <div class="split">
+              <div class="code-block">
+                <div class="code-header"><span class="code-label">Original</span><button class="copy-btn" onclick="copyCode('rep-orig-pre')">Copy</button></div>
+                <pre id="rep-orig-pre"></pre>
+              </div>
+              <div class="code-block">
+                <div class="code-header"><span class="code-label">Repaired</span><button class="copy-btn" onclick="copyCode('rep-new-pre')">Copy</button></div>
+                <pre id="rep-new-pre"></pre>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <div id="rep-badge"></div>
+              <ul class="error-list" id="rep-errors" style="margin-top:8px"></ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 4: Pipeline -->
+    <div class="panel" id="tab-3">
+      <div class="pipeline-center">
+        <div class="section-title" style="align-self:stretch">Full Automated Pipeline</div>
+        <div class="pipeline-steps">
+          <div class="ps">Generate</div><div class="ps-arrow">→</div>
+          <div class="ps">Validate</div><div class="ps-arrow">→</div>
+          <div class="ps">Repair</div><div class="ps-arrow">→</div>
+          <div class="ps">Mutate</div><div class="ps-arrow">→</div>
+          <div class="ps">Diff Test</div>
+        </div>
+        <button class="btn-primary btn-large" id="pipeline-btn" onclick="doRunPipeline()">▶ Run Full Pipeline</button>
+        <div id="pipe-loading" style="display:none" class="loading"><span class="spinner"></span><span id="pipe-status">Initialising pipeline...</span></div>
+      </div>
+      <div id="pipe-terminal-wrap" style="display:none">
+        <div class="terminal">
+          <div class="terminal-header">
+            <div class="term-dot" style="background:#ff5f57"></div>
+            <div class="term-dot" style="background:#ffbd2e"></div>
+            <div class="term-dot" style="background:#28c840"></div>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-left:8px">pipeline.py</span>
+          </div>
+          <div class="terminal-body" id="pipe-output"></div>
+        </div>
+        <div class="summary-grid" id="pipe-summary" style="display:none">
+          <div class="summary-card"><div class="s-val" id="s-gen">—</div><div class="s-lbl">Generated</div></div>
+          <div class="summary-card"><div class="s-val" id="s-valid">—</div><div class="s-lbl">Valid</div></div>
+          <div class="summary-card"><div class="s-val" id="s-invalid">—</div><div class="s-lbl">Invalid</div></div>
+          <div class="summary-card"><div class="s-val" id="s-repaired">—</div><div class="s-lbl">Repaired</div></div>
+          <div class="summary-card"><div class="s-val" id="s-mutations">—</div><div class="s-lbl">Mut Valid</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: Diff Results -->
+    <div class="panel" id="tab-4">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div class="section-title" style="margin:0;flex:1">Differential Test Results</div>
+        <button class="btn-secondary" onclick="doRunDiff()">↺ Re-run Diff Test</button>
+      </div>
+      <div class="metrics">
+        <div class="metric-card m-pass"><div class="val" id="d-pass">—</div><div class="lbl">✓ Pass</div></div>
+        <div class="metric-card m-diff"><div class="val" id="d-diff">—</div><div class="lbl">⚠ Divergence</div></div>
+        <div class="metric-card m-error"><div class="val" id="d-error">—</div><div class="lbl">✕ Error</div></div>
+      </div>
+      <div id="diff-loading" class="loading" style="display:none"><span class="spinner"></span>Loading report...</div>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="term-dot" style="background:#ff5f57"></div>
+          <div class="term-dot" style="background:#ffbd2e"></div>
+          <div class="term-dot" style="background:#28c840"></div>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-left:8px">results/report.txt</span>
+          <button class="copy-btn" style="margin-left:auto" onclick="copyCode('diff-report-pre')">Copy</button>
+        </div>
+        <div class="terminal-body" id="diff-report-pre">Loading...</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Status bar -->
+  <div id="statusbar">
+    <div class="sb-item green"><span class="dot" style="width:5px;height:5px"></span> Pipeline Status: <span id="sb-status">Ready</span></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">Backend: Flask 5000</div>
+    <div class="sb-sep"></div>
+    <div class="sb-item" id="sb-files">Loading files...</div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">Model: llama-3.3-70b-versatile</div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ── Tab switching ──────────────────────────────────────────────────────────────
+const tabs   = document.querySelectorAll('.tab');
+const panels = document.querySelectorAll('.panel');
+
+function switchTab(i) {
+  tabs.forEach((t,j)   => t.classList.toggle('active', i===j));
+  panels.forEach((p,j) => p.classList.toggle('active', i===j));
+}
+
+// ── IR Syntax Highlighter ─────────────────────────────────────────────────────
+function highlightIR(code) {
+  if (!code) return '<span class="placeholder">No IR generated.</span>';
+  const esc = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc
+    .replace(/^(;.*)$/gm,           '<span class="cmt">$1</span>')
+    .replace(/\b(define|declare|ret|br|call|alloca|load|store|add|sub|mul|sdiv|udiv|srem|urem|icmp|fcmp|phi|select|unreachable|switch|getelementptr|bitcast|zext|sext|trunc|and|or|xor|shl|lshr|ashr)\b/g, '<span class="kw">$1</span>')
+    .replace(/\b(i1|i8|i16|i32|i64|i128|float|double|void|ptr)\b/g, '<span class="ty">$1</span>')
+    .replace(/(%[\w.]+)/g,          '<span class="var">$1</span>')
+    .replace(/\b(\d+)\b/g,          '<span class="num">$1</span>');
+}
+
+function setIR(preId, code) {
+  document.getElementById(preId).innerHTML = highlightIR(code);
+}
+
+function setBadge(id, valid) {
+  document.getElementById(id).innerHTML = valid
+    ? '<div class="badge badge-valid">✅ VALID</div>'
+    : '<div class="badge badge-invalid">❌ INVALID</div>';
+}
+
+function setErrors(id, errors) {
+  const ul = document.getElementById(id);
+  ul.innerHTML = '';
+  (errors||[]).forEach(e => {
+    const li = document.createElement('li');
+    li.textContent = e;
+    ul.appendChild(li);
+  });
+}
+
+// ── Copy ──────────────────────────────────────────────────────────────────────
+function copyCode(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.innerText).then(() => {
+    const btns = document.querySelectorAll('.copy-btn');
+    btns.forEach(b => { if(b.getAttribute('onclick')?.includes(id)) { b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1500); }});
+  });
+}
+
+// ── Status bar ────────────────────────────────────────────────────────────────
+function setStatus(msg, color='') {
+  const el = document.getElementById('sb-status');
+  el.textContent = msg;
+  el.style.color = color || '';
+}
+
+// ── Load test case file list ──────────────────────────────────────────────────
+async function loadTestcases() {
+  try {
+    const res = await fetch('/testcases');
+    const files = await res.json();
+    const generated = files.filter(f=>f.category==='generated').map(f=>f.name);
+    const all = files.map(f=>f.name);
+    document.getElementById('sb-files').textContent = `Files: ${files.length}`;
+
+    ['val-file-select','mut-file-select','rep-file-select'].forEach(id => {
+      const sel = document.getElementById(id);
+      const cur = sel.value;
+      while(sel.options.length > 1) sel.remove(1);
+      generated.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+      if(cur) sel.value = cur;
+    });
+  } catch(e) { console.warn('Could not load testcases:', e); }
+}
+
+// ── TAB 1: Generate ───────────────────────────────────────────────────────────
+async function doGenerate() {
+  const seed = document.getElementById('seed-input').value.trim();
+  if(!seed) { alert('Please enter a seed description.'); return; }
+
+  document.getElementById('gen-loading').style.display = 'flex';
+  document.getElementById('gen-result').style.display  = 'none';
+  setStatus('Generating IR...', 'var(--yellow)');
+
+  try {
+    const res  = await fetch('/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({seed}) });
+    const data = await res.json();
+
+    setIR('gen-ir-pre', data.ir || data.error || 'No output');
+    setBadge('gen-badge', data.valid);
+    setErrors('gen-errors', data.errors);
+    document.getElementById('gen-result').style.display = 'grid';
+    setStatus('IR Generated', 'var(--green)');
+    loadTestcases();
+  } catch(e) {
+    alert('Error: ' + e.message);
+    setStatus('Error', 'var(--red)');
+  } finally {
+    document.getElementById('gen-loading').style.display = 'none';
+  }
+}
+
+// ── TAB 2: Validate ───────────────────────────────────────────────────────────
+async function doValidate() {
+  const filename = document.getElementById('val-file-select').value;
+  if(!filename) { alert('Please select a file.'); return; }
+
+  document.getElementById('val-loading').style.display = 'flex';
+  document.getElementById('val-result').style.display  = 'none';
+  setStatus('Validating...', 'var(--yellow)');
+
+  try {
+    const res  = await fetch('/validate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({filename}) });
+    const data = await res.json();
+
+    setIR('val-ir-pre', data.ir);
+    setBadge('val-badge', data.valid);
+    setErrors('val-errors', data.errors);
+    document.getElementById('val-result').style.display = 'grid';
+    setStatus(data.valid ? 'Valid' : 'Invalid', data.valid ? 'var(--green)' : 'var(--red)');
+  } catch(e) {
+    alert('Error: ' + e.message);
+    setStatus('Error', 'var(--red)');
+  } finally {
+    document.getElementById('val-loading').style.display = 'none';
+  }
+}
+
+// ── TAB 3: Mutate ─────────────────────────────────────────────────────────────
+async function doMutate() {
+  const filename      = document.getElementById('mut-file-select').value;
+  const mutation_type = document.getElementById('mut-type-select').value;
+  if(!filename) { alert('Please select a file.'); return; }
+
+  document.getElementById('mut-loading').style.display = 'flex';
+  document.getElementById('mut-result').style.display  = 'none';
+  setStatus('Mutating IR...', 'var(--yellow)');
+
+  try {
+    const res  = await fetch('/mutate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({filename, mutation_type}) });
+    const data = await res.json();
+
+    setIR('mut-orig-pre', data.original_ir);
+    setIR('mut-new-pre',  data.mutated_ir);
+    document.getElementById('mut-badge').innerHTML = data.valid
+      ? '<div class="badge badge-valid">✅ Mutation Valid</div>'
+      : '<div class="badge badge-invalid">⚠️ Mutation Broke IR</div>';
+    document.getElementById('mut-result').style.display = 'block';
+    setStatus('Mutation done', 'var(--green)');
+    loadTestcases();
+  } catch(e) {
+    alert('Error: ' + e.message);
+    setStatus('Error', 'var(--red)');
+  } finally {
+    document.getElementById('mut-loading').style.display = 'none';
+  }
+}
+
+// ── TAB 3: Repair ─────────────────────────────────────────────────────────────
+async function doRepair() {
+  const filename = document.getElementById('rep-file-select').value;
+  if(!filename) { alert('Please select a file.'); return; }
+
+  document.getElementById('rep-loading').style.display = 'flex';
+  document.getElementById('rep-result').style.display  = 'none';
+  setStatus('Repairing IR...', 'var(--yellow)');
+
+  try {
+    const res  = await fetch('/repair', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({filename}) });
+    const data = await res.json();
+
+    setIR('rep-orig-pre', data.original_ir);
+    setIR('rep-new-pre',  data.repaired_ir);
+    document.getElementById('rep-badge').innerHTML = data.fixed
+      ? '<div class="badge badge-fixed">✅ FIXED</div>'
+      : '<div class="badge badge-failed">❌ REPAIR FAILED</div>';
+    setErrors('rep-errors', data.errors);
+    document.getElementById('rep-result').style.display = 'block';
+    setStatus(data.fixed ? 'Repaired' : 'Repair failed', data.fixed ? 'var(--green)' : 'var(--red)');
+  } catch(e) {
+    alert('Error: ' + e.message);
+    setStatus('Error', 'var(--red)');
+  } finally {
+    document.getElementById('rep-loading').style.display = 'none';
+  }
+}
+
+// ── TAB 4: Pipeline ───────────────────────────────────────────────────────────
+async function doRunPipeline() {
+  document.getElementById('pipeline-btn').disabled = true;
+  document.getElementById('pipe-loading').style.display = 'flex';
+  document.getElementById('pipe-terminal-wrap').style.display = 'block';
+  document.getElementById('pipe-summary').style.display = 'none';
+
+  const out = document.getElementById('pipe-output');
+  out.innerHTML = '';
+  setStatus('Pipeline running...', 'var(--yellow)');
+
+  const statuses = ['Generating IR...', 'Validating IR...', 'Repairing...', 'Mutating...', 'Running diff tests...'];
+  let si = 0;
+  const tick = setInterval(() => {
+    document.getElementById('pipe-status').textContent = statuses[si++ % statuses.length];
+  }, 3000);
+
+  try {
+    const res  = await fetch('/run_pipeline', { method:'POST' });
+    const data = await res.json();
+
+    clearInterval(tick);
+
+    // Colour-code output lines
+    (data.output||'').split('\n').forEach(line => {
+      const span = document.createElement('span');
+      if (line.includes('✅') || line.includes('VALID') || line.includes('PASS'))
+        span.className = 't-cyan';
+      else if (line.includes('❌') || line.includes('ERROR') || line.includes('INVALID'))
+        span.className = 't-red';
+      else if (line.includes('===') || line.includes('COMPLETE'))
+        span.className = 't-white';
+      else if (line.includes('⚠') || line.includes('WARNING'))
+        span.className = 't-yellow';
+      span.textContent = line;
+      out.appendChild(span);
+      out.appendChild(document.createElement('br'));
+    });
+    out.scrollTop = out.scrollHeight;
+
+    // Parse summary
+    const genM     = data.output.match(/Files generated\s*:\s*(\d+)/);
+    const valM     = data.output.match(/Valid\s*:\s*(\d+)/);
+    const invM     = data.output.match(/Invalid\s*:\s*(\d+)/);
+    const repM     = data.output.match(/Repaired\s*:\s*([\d\s\/]+)/);
+    const mutM     = data.output.match(/Mutations valid\s*:\s*([\d\s\/]+)/);
+
+    document.getElementById('s-gen').textContent      = genM  ? genM[1]  : '?';
+    document.getElementById('s-valid').textContent    = valM  ? valM[1]  : '?';
+    document.getElementById('s-invalid').textContent  = invM  ? invM[1]  : '?';
+    document.getElementById('s-repaired').textContent = repM  ? repM[1].trim() : '?';
+    document.getElementById('s-mutations').textContent= mutM  ? mutM[1].trim() : '?';
+    document.getElementById('pipe-summary').style.display = 'grid';
+
+    setStatus(data.success ? 'Pipeline complete' : 'Pipeline finished with errors',
+              data.success ? 'var(--green)' : 'var(--yellow)');
+    loadTestcases();
+    loadDiffReport();
+  } catch(e) {
+    clearInterval(tick);
+    out.innerHTML += `<span class="t-red">Error: ${e.message}</span>`;
+    setStatus('Pipeline error', 'var(--red)');
+  } finally {
+    document.getElementById('pipe-loading').style.display = 'none';
+    document.getElementById('pipeline-btn').disabled = false;
+  }
+}
+
+// ── TAB 5: Diff report ────────────────────────────────────────────────────────
+async function loadDiffReport() {
+  document.getElementById('diff-loading').style.display = 'flex';
+  try {
+    const res  = await fetch('/diff_report');
+    const data = await res.json();
+
+    document.getElementById('d-pass').textContent  = data.pass_count;
+    document.getElementById('d-diff').textContent  = data.diff_count;
+    document.getElementById('d-error').textContent = data.error_count;
+
+    // Colour-code report lines
+    const pre = document.getElementById('diff-report-pre');
+    pre.innerHTML = '';
+    (data.report||'').split('\n').forEach(line => {
+      const span = document.createElement('span');
+      if      (line.includes('[PASS]'))  span.style.color = 'var(--green)';
+      else if (line.includes('[DIFF]'))  span.style.color = 'var(--red)';
+      else if (line.includes('[ERROR]')) span.style.color = 'var(--yellow)';
+      else if (line.startsWith('==='))   span.style.color = 'var(--cyan)';
+      span.textContent = line;
+      pre.appendChild(span);
+      pre.appendChild(document.createElement('br'));
+    });
+  } catch(e) {
+    document.getElementById('diff-report-pre').textContent = 'Could not load report.';
+  } finally {
+    document.getElementById('diff-loading').style.display = 'none';
+  }
+}
+
+async function doRunDiff() {
+  setStatus('Running diff test...', 'var(--yellow)');
+  document.getElementById('diff-loading').style.display = 'flex';
+  document.getElementById('diff-report-pre').textContent = 'Running...';
+  try {
+    await fetch('/run_diff', { method:'POST' });
+    await loadDiffReport();
+    setStatus('Diff test complete', 'var(--green)');
+  } catch(e) {
+    setStatus('Diff test error', 'var(--red)');
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadTestcases();
+loadDiffReport();
+</script>
+</body>
+</html>

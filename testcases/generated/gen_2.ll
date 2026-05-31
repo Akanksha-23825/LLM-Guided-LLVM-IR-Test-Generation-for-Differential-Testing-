@@ -1,5 +1,6 @@
 define i32 @is_even(i32 %x) {
 entry:
-  %rem = urem i32 %x, 2
-  ret i32 (or i32 %rem, 0)
+  %1 = urem i32 %x, 2
+  %2 = zext i1 %1 to i32
+  ret i32 %2
 }

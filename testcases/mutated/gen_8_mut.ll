@@ -1,28 +1,29 @@
-; Mutation: replaced the constant value 11 with 20 in the icmp slt instruction
-define i32 @sum_to_10() {
+; Mutation: renamed SSA variable %sum to %total_sum
+define i32 @sum_from_1_to_10() {
 entry:
-  %sum = alloca i32, align 4
+  %total_sum = alloca i32, align 4
   %i = alloca i32, align 4
-  store i32 0, i32* %sum, align 4
-  store i32 1, i32* %i, align 4
+  %1 = add i32 0, 1
+  store i32 %1, i32* %i, align 4
+  %2 = load i32, i32* %total_sum, align 4
+  store i32 %2, i32* %total_sum, align 4
   br label %loop
 
 loop:
-  %i_val = load i32, i32* %i, align 4
-  %cond = icmp slt i32 %i_val, 20
-  br i1 %cond, label %body, label %exit
+  %3 = load i32, i32* %i, align 4
+  %4 = icmp slt i32 %3, 11
+  br i1 %4, label %body, label %exit
 
 body:
-  %i_val1 = load i32, i32* %i, align 4
-  %sum_val = load i32, i32* %sum, align 4
-  %new_sum = add i32 %sum_val, %i_val1
-  store i32 %new_sum, i32* %sum, align 4
-  %i_val2 = load i32, i32* %i, align 4
-  %new_i = add i32 %i_val2, 1
-  store i32 %new_i, i32* %i, align 4
+  %5 = load i32, i32* %total_sum, align 4
+  %6 = load i32, i32* %i, align 4
+  %7 = add i32 %5, %6
+  store i32 %7, i32* %total_sum, align 4
+  %8 = add i32 %3, 1
+  store i32 %8, i32* %i, align 4
   br label %loop
 
 exit:
-  %sum_val1 = load i32, i32* %sum, align 4
-  ret i32 %sum_val1
+  %9 = load i32, i32* %total_sum, align 4
+  ret i32 %9
 }

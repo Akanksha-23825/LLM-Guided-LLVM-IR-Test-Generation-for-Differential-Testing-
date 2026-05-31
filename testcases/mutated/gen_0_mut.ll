@@ -1,6 +1,7 @@
-; Mutation: replaced the function with a new one that adds 5 instead of %b
-define i32 @add(i32 %a) {
+; Mutation: added dead computation with unused result
+define i32 @add(i32 %a, i32 %b) {
 entry:
-  %add = add i32 %a, 5
-  ret i32 %add
+  %sum = add i32 %a, %b
+  %unused = mul i32 %a, %b
+  ret i32 %sum
 }
