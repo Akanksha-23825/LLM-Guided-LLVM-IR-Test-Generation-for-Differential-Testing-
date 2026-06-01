@@ -1,14 +1,12 @@
 define i32 @loop_until_zero(i32 %value) {
 entry:
-  %tmp = icmp slt i32 %value, 0
-  br i1 %tmp, label %exit, label %loop
+  br i1 %cond, label %loop, label %exit
 
 loop:
-  %i = phi i32 [ 0, %entry ], [ %i.next, %loop ]
-  %i.next = add nsw i32 %i, 1
-  %tmp2 = icmp slt i32 %i.next, %value
-  br i1 %tmp2, label %loop, label %exit
+  %tmp = icmp eq i32 %value, 0
+  br i1 %tmp, label %exit, label %loop
 
 exit:
-  ret i32 %i
+  ret i32 %value
+  unreachable
 }

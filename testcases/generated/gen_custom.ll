@@ -1,6 +1,5 @@
-define i32 @min(i32 %a, i32 %b) {
+define i32 @add(i32 %x, i32 %y) {
 entry:
-  %cmp = icmp slt i32 %a, %b
-  %sel = select i1 %cmp, i32 %a, i32 %b
-  ret i32 %sel
+  %sum = add i32 %x, %y
+  ret i32 %sum
 }

@@ -1,9 +1,27 @@
-define i32 @max3(i32 %a, i32 %b, i32 %c) {
+define i32 @max_of_three(i32 %a, i32 %b, i32 %c) {
 entry:
-  %compare_ab = icmp sgt i32 %a, %b
-  %ab_max = select i1 %compare_ab, i32 %a, i32 %b
-  %compare_ab_c = icmp sgt i32 %ab_max, %c
-  %compare_ac = icmp sgt i32 %a, %c
-  %max3 = select i1 %compare_ab_c, i32 %ab_max, i32 (select i1 %compare_ac, i32 %a, i32 %c)
-  ret i32 %max3
+  %max_ab = icmp slt i32 %a, %b
+  br i1 %max_ab, label %a_less_than_b, label %b_less_than_a
+
+a_less_than_b:
+  %max_ac = icmp slt i32 %b, %c
+  br i1 %max_ac, label %b_less_than_c, label %c_less_than_b
+
+b_less_than_c:
+  ret i32 %c
+
+c_less_than_b:
+  ret i32 %b
+
+b_less_than_a:
+  %max_ab = icmp slt i32 %c, %a
+  br i1 %max_ab, label %c_less_than_a, label %a_less_than_c
+
+a_less_than_c:
+  ret i32 %a
+
+c_less_than_a:
+  ret i32 %c
+
+unreachable
 }

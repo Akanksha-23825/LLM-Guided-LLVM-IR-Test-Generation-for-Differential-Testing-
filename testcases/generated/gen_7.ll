@@ -1,5 +1,5 @@
-define i1 @greater_than_100(i32 %input) {
+define i32 @greater_than_100(i32 %x) {
 entry:
-  %gt = icmp sgt i32 %input, 100
-  ret i1 %gt
+  %1 = icmp sgt i32 %x, 100
+  ret i32 %1
 }

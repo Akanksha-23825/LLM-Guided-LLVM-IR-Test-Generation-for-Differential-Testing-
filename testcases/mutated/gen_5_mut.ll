@@ -1,7 +1,6 @@
-; Mutation: added dead computation with unused result
-define i32 @entry(i32 %a, i32 %b) {
+; Mutation: renamed SSA variable %mul to %product
+define i32 @multiply(i32 %a, i32 %b) {
 entry:
-  %mul = mul i32 %a, %b
-  %unused = add i32 %a, %b
-  ret i32 %mul
+  %product = mul i32 %a, %b
+  ret i32 %product
 }

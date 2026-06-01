@@ -30,63 +30,97 @@ from mutator import MUTATION_TYPES, mutate_ir
 
 
 def main():
+
     valid_files = []
     invalid_files = []
+
     repair_success = 0
     mut_valid = 0
+    generated_count = 0
 
     # =========================================================
     # STEP 1 — Generate IR
     # =========================================================
+
     print("\n=== STEP 1: Generating IR ===")
 
     for i, seed in enumerate(SEEDS):
-        ir_text = generate_ir(seed)
 
-        filepath = GENERATED_DIR / f"gen_{i}.ll"
+        try:
+            ir_text = generate_ir(seed)
 
-        with open(filepath, "w") as f:
-            f.write(ir_text)
+            filepath = GENERATED_DIR / f"gen_{i}.ll"
 
-        print(f"  Saved gen_{i}.ll")
+            with open(filepath, "w") as f:
+                f.write(ir_text)
+
+            generated_count += 1
+
+            print(f"  Saved gen_{i}.ll")
+
+        except Exception as e:
+
+            print(f"  ❌ Failed gen_{i}.ll")
+            print(f"     {e}")
 
     # =========================================================
     # STEP 2 — Validate
     # =========================================================
+
     print("\n=== STEP 2: Validating Generated IR ===")
 
-    for i in range(10):
+    for i in range(len(SEEDS)):
+
         filepath = GENERATED_DIR / f"gen_{i}.ll"
+
+        if not filepath.exists():
+            print(f"  ⚠️ Missing file: gen_{i}.ll")
+            continue
 
         result = validate(filepath)
 
         if result["valid"]:
+
             print(f"  ✅ VALID: gen_{i}.ll")
 
-            shutil.copy(filepath, VALID_DIR / filepath.name)
+            shutil.copy(
+                filepath,
+                VALID_DIR / filepath.name
+            )
 
             valid_files.append(filepath)
 
         else:
+
             print(f"  ❌ INVALID: gen_{i}.ll")
 
             for err in result["errors"]:
                 print(f"    → {err}")
 
-            invalid_files.append((filepath, result["errors"]))
+            invalid_files.append(
+                (filepath, result["errors"])
+            )
 
     # =========================================================
     # STEP 3 — Repair Invalid IR
     # =========================================================
+
     print("\n=== STEP 3: Repairing Invalid IR ===")
 
     for path, errors in invalid_files:
+
         with open(path, "r") as f:
             ir_text = f.read()
 
-        repaired_ir = repair_ir(ir_text, errors)
+        repaired_ir = repair_ir(
+            ir_text,
+            errors
+        )
 
-        repaired_path = path.parent / f"{path.stem}_repaired.ll"
+        repaired_path = (
+            path.parent /
+            f"{path.stem}_repaired.ll"
+        )
 
         with open(repaired_path, "w") as f:
             f.write(repaired_ir)
@@ -94,62 +128,128 @@ def main():
         repair_result = validate(repaired_path)
 
         if repair_result["valid"]:
-            print(f"  ✅ Repaired successfully: {repaired_path.name}")
+
+            print(
+                f"  ✅ Repaired successfully: "
+                f"{repaired_path.name}"
+            )
+
             repair_success += 1
+
         else:
-            print(f"  ❌ Repair failed: {repaired_path.name}")
+
+            print(
+                f"  ❌ Repair failed: "
+                f"{repaired_path.name}"
+            )
 
     # =========================================================
     # STEP 4 — Mutate Valid Files
     # =========================================================
+
     print("\n=== STEP 4: Mutating Valid IR ===")
 
     for path in valid_files:
+
         with open(path, "r") as f:
             ir_text = f.read()
 
-        mutation_type = random.choice(MUTATION_TYPES)
+        mutation_type = random.choice(
+            MUTATION_TYPES
+        )
 
-        mutated_ir = mutate_ir(ir_text, mutation_type)
+        mutated_ir = mutate_ir(
+            ir_text,
+            mutation_type
+        )
 
-        mutated_path = MUTATED_DIR / f"{path.stem}_mut.ll"
+        mutated_path = (
+            MUTATED_DIR /
+            f"{path.stem}_mut.ll"
+        )
 
         with open(mutated_path, "w") as f:
             f.write(mutated_ir)
 
-        mutation_result = validate(mutated_path)
+        mutation_result = validate(
+            mutated_path
+        )
 
         if mutation_result["valid"]:
-            print(f"  ✅ Mutation valid: {mutated_path.name}")
+
+            print(
+                f"  ✅ Mutation valid: "
+                f"{mutated_path.name}"
+            )
+
             mut_valid += 1
+
         else:
-            print(f"  ⚠️  Mutation invalid: {mutated_path.name}")
+
+            print(
+                f"  ⚠️ Mutation invalid: "
+                f"{mutated_path.name}"
+            )
 
     # =========================================================
     # STEP 5 — Differential Testing
     # =========================================================
-    print("\n=== STEP 5: Running Differential Testing ===")
+
+    print(
+        "\n=== STEP 5: Running Differential Testing ==="
+    )
 
     try:
+
         subprocess.run(
-            ["python3", "diff_tester.py", "--report", "results/report.txt"],
+            [
+                "python3",
+                "diff_tester.py",
+                "--report",
+                "results/report.txt",
+            ],
             cwd=BASE_DIR,
-            capture_output=False
+            capture_output=False,
         )
 
     except Exception as e:
-        print(f"Error running differential testing: {e}")
+
+        print(
+            f"Error running differential testing: {e}"
+        )
 
     # =========================================================
     # STEP 6 — Final Summary
     # =========================================================
+
     print("\n=== PIPELINE COMPLETE ===")
-    print(f"Files generated   : 10")
-    print(f"Valid             : {len(valid_files)}")
-    print(f"Invalid           : {len(invalid_files)}")
-    print(f"Repaired          : {repair_success} / {len(invalid_files)}")
-    print(f"Mutations valid   : {mut_valid} / {len(valid_files)}")
-    print(f"Diff test report  : results/report.txt")
+
+    print(
+        f"Files generated   : {generated_count}"
+    )
+
+    print(
+        f"Valid             : {len(valid_files)}"
+    )
+
+    print(
+        f"Invalid           : {len(invalid_files)}"
+    )
+
+    print(
+        f"Repaired          : "
+        f"{repair_success} / {len(invalid_files)}"
+    )
+
+    print(
+        f"Mutations valid   : "
+        f"{mut_valid} / {len(valid_files)}"
+    )
+
+    print(
+        "Diff test report  : "
+        "results/report.txt"
+    )
 
 
 if __name__ == "__main__":

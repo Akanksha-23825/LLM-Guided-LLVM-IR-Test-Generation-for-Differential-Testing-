@@ -1,0 +1,23 @@
+{
+    "pipeline": {
+        "generated": 21,
+        "valid": 15,
+        "invalid": 6,
+        "validity_rate": 71.43,
+        "mutations": 16,
+        "mutation_rate": 106.67
+    },
+    "differential_testing": {
+        "pass": 17,
+        "diff": 3,
+        "error": 2
+    },
+    "diversity": {
+        "Arithmetic": 16,
+        "Loops": 8,
+        "Bitwise": 5,
+        "PHI": 6,
+        "Advanced": 5,
+        "ControlFlow": 7
+    }
+}

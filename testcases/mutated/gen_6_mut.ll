@@ -1,6 +1,6 @@
-; Mutation: renamed %tmp1 to %result
+; Mutation: changed sub to add
 define i32 @subtract(i32 %a, i32 %b) {
 entry:
-  %result = sub i32 %a, %b
+  %result = add i32 %a, %b
   ret i32 %result
 }

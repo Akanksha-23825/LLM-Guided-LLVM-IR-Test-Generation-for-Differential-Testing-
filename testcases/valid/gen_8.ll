@@ -1,28 +1,21 @@
-define i32 @sum_from_1_to_10() {
+define i32 @sum_to_ten() {
 entry:
-  %sum = alloca i32, align 4
-  %i = alloca i32, align 4
-  %1 = add i32 0, 1
-  store i32 %1, i32* %i, align 4
-  %2 = load i32, i32* %sum, align 4
-  store i32 %2, i32* %sum, align 4
+  %i = alloca i32
+  store i32 0, i32* %i
   br label %loop
 
 loop:
-  %3 = load i32, i32* %i, align 4
-  %4 = icmp slt i32 %3, 11
-  br i1 %4, label %body, label %exit
+  %i1 = load i32, i32* %i
+  %i2 = icmp slt i32 %i1, 11
+  br i1 %i2, label %loop_body, label %exit
 
-body:
-  %5 = load i32, i32* %sum, align 4
-  %6 = load i32, i32* %i, align 4
-  %7 = add i32 %5, %6
-  store i32 %7, i32* %sum, align 4
-  %8 = add i32 %3, 1
-  store i32 %8, i32* %i, align 4
+loop_body:
+  %i3 = load i32, i32* %i
+  %i4 = add i32 %i3, 1
+  store i32 %i4, i32* %i
   br label %loop
 
 exit:
-  %9 = load i32, i32* %sum, align 4
-  ret i32 %9
+  %i5 = load i32, i32* %i
+  ret i32 %i5
 }

@@ -1,9 +1,11 @@
-; Mutation: added a dead computation for %unused
-define i32 @check_even(i32 %x) {
+; Mutation: replaced numeric constant 2 with 4
+define i32 @even(i32 %x) {
 entry:
-  %rem = urem i32 %x, 2
+  %rem = urem i32 %x, 4
   %cond = icmp eq i32 %rem, 0
-  %unused = add i32 %rem, 1
-  %ret = zext i1 %cond to i32
-  ret i32 %ret
+  br i1 %cond, label %even, label %odd
+even:
+  ret i32 1
+odd:
+  ret i32 0
 }

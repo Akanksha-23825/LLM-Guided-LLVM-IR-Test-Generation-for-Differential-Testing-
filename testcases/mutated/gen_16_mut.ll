@@ -1,7 +1,8 @@
+; Mutation: renamed %is_zero SSA variable to %exponent_is_zero
 define i32 @power(i32 %base, i32 %exponent) {
 entry:
-  %is_zero = icmp eq i32 %exponent, 0
-  br i1 %is_zero, label %return_zero, label %mult
+  %exponent_is_zero = icmp eq i32 %exponent, 0
+  br i1 %exponent_is_zero, label %return_zero, label %mult
 
 return_zero:
   ret i32 1

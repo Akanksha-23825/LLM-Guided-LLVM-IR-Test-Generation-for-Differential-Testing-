@@ -3,7 +3,7 @@ import sys
 import subprocess
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify
-
+from src.analytics import generate_report
 # ── Setup ──────────────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR / "src"))
@@ -247,27 +247,70 @@ def list_testcases():
 # ── Route 9 — Re-run Diff Test ────────────────────────────────────────────────
 @app.route("/run_diff", methods=["POST"])
 def run_diff():
+
     try:
+
         proc = subprocess.run(
-            [sys.executable, "diff_tester.py", "--report", "results/report.txt"],
+            [
+                sys.executable,
+                "diff_tester.py",
+                "--report",
+                "results/report.txt"
+            ],
             cwd=str(BASE_DIR),
             capture_output=True,
             text=True,
-            timeout=120,
-            env={**os.environ},
+            timeout=300
         )
-        output  = proc.stdout + ("\n" + proc.stderr if proc.stderr else "")
+
+        output = proc.stdout
+
+        if proc.stderr:
+            output += "\n" + proc.stderr
+
         success = proc.returncode == 0
+
     except subprocess.TimeoutExpired:
-        output  = "Diff test timed out."
+
+        output = "Differential testing timed out."
         success = False
+
     except Exception as e:
-        output  = str(e)
+
+        output = str(e)
         success = False
 
-    return jsonify({"output": output, "success": success})
+    return jsonify({
+        "success": success,
+        "output": output
+    })
+
+# ==========================================
+# ANALYTICS ROUTE
+# ==========================================
+
+@app.route("/analytics")
+def analytics():
+
+    try:
+        report = generate_report()
+
+        return jsonify({
+            "success": True,
+            "data": report
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        })
 
 
-# ── Run ────────────────────────────────────────────────────────────────────────
+# ==========================================
+# START FLASK
+# ==========================================
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True)

@@ -1,33 +1,24 @@
-; Mutation: added dead computation with result %14
+; Mutation: added dead computation with result never used
 define i32 @factorial(i32 %n) {
 entry:
-  %1 = alloca i32
-  store i32 %n, i32* %1
-  %2 = load i32, i32* %1
-  %3 = icmp eq i32 %2, 0
-  br i1 %3, label %if.then, label %if.else
+  %n.addr = alloca i32, align 4
+  store i32 %n, i32* %n.addr, align 4
+  br label %loop
+
+loop:
+  %0 = load i32, i32* %n.addr, align 4
+  %1 = sub i32 %0, 1
+  store i32 %1, i32* %n.addr, align 4
+  %2 = load i32, i32* %n.addr, align 4
+  %3 = load i32, i32* %n.addr, align 4
+  %mul = mul nsw i32 %2, %3
+  store i32 %mul, i32* %n.addr, align 4
+  %4 = load i32, i32* %n.addr, align 4
+  %5 = icmp slt i32 %4, 1
+  %dead = add i32 %4, 10
+  br i1 %5, label %if.then, label %loop
 
 if.then:
-  %4 = mul i32 1, 1
-  br label %if.end
-
-if.else:
-  %5 = load i32, i32* %1
-  %6 = mul i32 %5, 1
-  %7 = sub i32 %5, 1
-  store i32 %7, i32* %1
-  br label %if.cont
-
-if.cont:
-  %8 = load i32, i32* %1
-  %9 = call i32 @factorial(i32 %8)
-  %10 = mul i32 %6, %9
-  %11 = load i32, i32* %1
-  br label %if.end
-
-if.end:
-  %12 = load i32, i32* %1
-  %13 = mul i32 1, %12
-  %14 = add i32 %12, %12
-  ret i32 %13
+  %6 = load i32, i32* %n.addr, align 4
+  ret i32 %6
 }
